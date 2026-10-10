@@ -1,0 +1,4 @@
+import { getChatGPTUser,chatGPTSignInPath } from './chatgpt-auth';
+import WorkspaceApp from './workspace';
+export const dynamic='force-dynamic';
+export default async function Page(){const user=await getChatGPTUser();if(!user)return <main className="login"><div className="login-card"><div className="brand-symbol">g</div><div className="eyebrow">GEMNAD OPERATIONS</div><h1>Great work.<br/>Beautifully organised.</h1><p>One home for your brands, content and creative team.</p><a className="button primary" href={chatGPTSignInPath('/')} target="_top">Sign in to your workspace →</a><small>Access is limited to your authorised Gemnad account.</small></div><div className="login-art"><div className="orbit one"/><div className="orbit two"/><span>Make room<br/>for your<br/><em>next big idea.</em></span></div></main>;return <WorkspaceApp/>;}
