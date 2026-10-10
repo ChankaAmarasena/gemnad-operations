@@ -74,13 +74,13 @@ CREATE TABLE `tasks` (
 --> statement-breakpoint
 CREATE UNIQUE INDEX `task_source` ON `tasks` (`source_key`);--> statement-breakpoint
 CREATE TRIGGER content_validate_insert BEFORE INSERT ON content BEGIN
- SELECT CASE WHEN NEW.status NOT IN ('Planned','In Progress','Ready','Published','On Hold') OR NEW.design_status NOT IN ('Pending','Created','Uploaded to Drive') OR NEW.priority NOT IN ('Low','Medium','High','Urgent') THEN RAISE(ABORT,'Invalid content workflow value') END;
+ SELECT RAISE(ABORT,'Invalid content workflow value') WHERE NEW.status NOT IN ('Planned','In Progress','Ready','Published','On Hold') OR NEW.design_status NOT IN ('Pending','Created','Uploaded to Drive') OR NEW.priority NOT IN ('Low','Medium','High','Urgent');
 END;
 --> statement-breakpoint
 CREATE TRIGGER content_validate_update BEFORE UPDATE ON content BEGIN
- SELECT CASE WHEN NEW.status NOT IN ('Planned','In Progress','Ready','Published','On Hold') OR NEW.design_status NOT IN ('Pending','Created','Uploaded to Drive') OR NEW.priority NOT IN ('Low','Medium','High','Urgent') THEN RAISE(ABORT,'Invalid content workflow value') END;
- SELECT CASE WHEN NEW.design_status <> OLD.design_status AND NOT ((OLD.design_status='Pending' AND NEW.design_status='Created') OR (OLD.design_status='Created' AND NEW.design_status='Uploaded to Drive')) THEN RAISE(ABORT,'Invalid design transition') END;
- SELECT CASE WHEN NEW.design_status='Uploaded to Drive' AND OLD.design_status<>'Uploaded to Drive' AND NEW.status<>'Ready' THEN RAISE(ABORT,'Upload transition must set Ready atomically') END;
+ SELECT RAISE(ABORT,'Invalid content workflow value') WHERE NEW.status NOT IN ('Planned','In Progress','Ready','Published','On Hold') OR NEW.design_status NOT IN ('Pending','Created','Uploaded to Drive') OR NEW.priority NOT IN ('Low','Medium','High','Urgent');
+ SELECT RAISE(ABORT,'Invalid design transition') WHERE NEW.design_status <> OLD.design_status AND NOT ((OLD.design_status='Pending' AND NEW.design_status='Created') OR (OLD.design_status='Created' AND NEW.design_status='Uploaded to Drive'));
+ SELECT RAISE(ABORT,'Upload transition must set Ready atomically') WHERE NEW.design_status='Uploaded to Drive' AND OLD.design_status<>'Uploaded to Drive' AND NEW.status<>'Ready';
 END;
 --> statement-breakpoint
 CREATE TRIGGER content_created AFTER INSERT ON content BEGIN
@@ -100,13 +100,13 @@ CREATE TRIGGER task_updated AFTER UPDATE ON tasks BEGIN
 END;
 --> statement-breakpoint
 CREATE TRIGGER protect_last_admin BEFORE UPDATE ON members WHEN OLD.role='Admin' AND OLD.active=1 AND (NEW.role<>'Admin' OR NEW.active<>1) BEGIN
- SELECT CASE WHEN (SELECT count(*) FROM members WHERE role='Admin' AND active=1)=1 THEN RAISE(ABORT,'Cannot remove last active administrator') END;
+ SELECT RAISE(ABORT,'Cannot remove last active administrator') WHERE (SELECT count(*) FROM members WHERE role='Admin' AND active=1)=1;
 END;
 --> statement-breakpoint
 CREATE TRIGGER member_validate_insert BEFORE INSERT ON members BEGIN
- SELECT CASE WHEN NEW.role NOT IN ('Admin','Manager','Designer','Staff') OR NEW.active NOT IN (0,1) THEN RAISE(ABORT,'Invalid membership') END;
+ SELECT RAISE(ABORT,'Invalid membership') WHERE NEW.role NOT IN ('Admin','Manager','Designer','Staff') OR NEW.active NOT IN (0,1);
 END;
 --> statement-breakpoint
 CREATE TRIGGER member_validate_update BEFORE UPDATE ON members BEGIN
- SELECT CASE WHEN NEW.role NOT IN ('Admin','Manager','Designer','Staff') OR NEW.active NOT IN (0,1) THEN RAISE(ABORT,'Invalid membership') END;
+ SELECT RAISE(ABORT,'Invalid membership') WHERE NEW.role NOT IN ('Admin','Manager','Designer','Staff') OR NEW.active NOT IN (0,1);
 END;

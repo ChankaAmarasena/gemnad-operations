@@ -24,7 +24,7 @@ Site project: `appgprj_6aca73b4b28881918355848defae5731`.
 
 ## Deployment checkpoint
 
-Local implementation and verification complete. Source push and initial private publication are the next step in this same task. Reuse the Site ID above; do not create a replacement project. The final deployment result and source commit will be recorded after publication.
+Source pushed as `1eb3226e0651c23620c87c933e0a113e65814fab`. Initial deployment failed with incomplete SQL input in the D1 trigger parser. The failed initial migration was repaired to use SELECT RAISE ... WHERE instead of unparenthesized CASE ... END (Cloudflare workers-sdk issue 4727). Local tests pass. Retry publication with the repaired archive; reuse the same Site ID. No live business records exist.
 
 ## Honest boundaries / follow-up
 
