@@ -38,7 +38,18 @@ Design advances Pending → Created → Uploaded to Drive. The last transition u
 
 The MVP stores Drive URLs and upload status; it does not upload files into Google Drive. Upload the asset in Drive, paste its URL, and mark it Uploaded to Drive.
 
-## Migration
+## Company content calendars
+
+Open Content calendar and choose a company. Each company has its own plan and two entry points:
+
+- **Import Excel**: read .xlsx workbooks or CSV files, select the worksheet, automatically match columns (or adjust the matching), review content and import into only the selected company. Excel dates/time cells and multiline notes are supported. Optional creator/status/priority values are matched, with Unassigned/Planned/Medium defaults shown for review.
+- **Add content**: a small form with content, publish date/time, special note, content type and platform. Company is inherited from the selected calendar. Creator/status/priority can be changed in the list afterward.
+
+List view displays all details without opening individual records. Creator/status/priority dropdowns save immediately; the pencil edits the other fields directly within that row. Calendar view places records on the saved publishing dates. Admin and Manager can import and edit; existing role restrictions remain.
+
+Company Excel imports support up to 5 MB and 300 new records per sheet. Older .xls files should be saved as .xlsx first. Imported rows use server-derived, company-scoped content fingerprints, so retrying the same rows does not insert duplicates, even when row order or creator/priority has changed. Modified title/date/time/type/platform describes a different content item and is intentionally a new import identity. Existing records are not overwritten by re-import. No workbook is stored in the repository or public assets.
+
+## Legacy migration
 
 See [docs/MIGRATION.md](docs/MIGRATION.md). Imports validate all rows before an atomic write, use unique source keys, skip previously imported keys, and never overwrite existing app edits. Main statuses are preserved; design status starts Pending because the generated queue is not a trusted standalone source. Reconcile existing design status against canonical content after import.
 

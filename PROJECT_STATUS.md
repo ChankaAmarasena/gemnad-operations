@@ -1,7 +1,19 @@
 # Gemnad Operations — project status
 
-Updated: 10 October 2026 (Asia/Colombo).
+Updated: 11 October 2026 (Asia/Colombo).
 Site project: `appgprj_6aca73b4b28881918355848defae5731`.
+
+## Current revision: company calendar correction
+
+Implemented the user's corrected workflow:
+- Select a company first; company calendar with Import Excel and Add Content actions.
+- Direct .xlsx/CSV reader, worksheet choice, header/column matching, date/time normalization, preview and safe defaults.
+- Six-field content entry; no duplicate company selection in the form.
+- Complete list columns, multiline special notes, inline creator/status/priority autosave, in-row editing.
+- Company-scoped atomic import with server-derived duplicate keys. No schema migration; existing records and role restrictions preserved.
+- Nine tests pass, including real Excel parsing, date/time cells, defaults, duplicates, cross-company and role checks.
+- Browser QA passed: XLSX upload/preview/import, inline priority save, one-by-one creation and full-detail table rendering. Local fake records only.
+- Production build and typecheck passed. This source revision is being published to the existing private Site. See native deployment receipt / ignored `.sites-runtime/calendar-deployment.json` for the latest publication result.
 
 ## Completed source milestones
 

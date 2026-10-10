@@ -33,3 +33,18 @@ test('API authentication, scoping and role enforcement',async()=>{
  as('designer');assert.equal((await GET()).status,403);
  as('unknown');assert.equal((await GET()).status,403);
 });
+test('company Excel imports are scoped, permission checked, atomic and idempotent',async()=>{
+ const submit=(company,rows)=>POST(new Request('http://localhost/api/workspace',{method:'POST',headers:{origin:'http://localhost','Content-Type':'application/json'},body:JSON.stringify({action:'calendar_import',data:{company_id:company},rows})}));
+ const row={company_id:'co',title:'Excel content',publish_date:todayColombo(),publish_time:'18:00',type:'Carousel',platform:'Instagram',notes:'All visible',creator_id:null,status:'Planned',priority:'Medium'};
+ as('staff');assert.equal((await submit('co',[row])).status,403);
+ as('manager');let res=await submit('co',[row]);assert.equal(res.status,200);assert.equal((await res.json()).inserted,1);
+ res=await submit('co',[{...row,source_key:'a-fake-new-source',priority:'High'}]);assert.equal((await res.json()).skipped,1);
+ db.exec("INSERT INTO companies(id,name) VALUES('co-two','Second Company')");
+ const before=db.prepare('SELECT count(*) n FROM content').get().n;
+ assert.equal((await submit('co',[{...row,title:'Not inserted'},{...row,company_id:'co-two'}])).status,400);
+ assert.equal(db.prepare('SELECT count(*) n FROM content').get().n,before);
+ assert.equal((await submit('co-two',[{...row,company_id:'co-two'}])).status,200);
+ const made=db.prepare("SELECT * FROM content WHERE title='Excel content' AND company_id='co'").get();assert.equal(made.design_status,'Pending');
+ assert.equal((await post('content',{...made,priority:'Urgent'})).status,200);assert.equal(db.prepare('SELECT priority FROM content WHERE id=?').get(made.id).priority,'Urgent');
+ assert.equal(db.prepare('SELECT notes FROM content WHERE id=?').get(made.id).notes,'All visible');
+});

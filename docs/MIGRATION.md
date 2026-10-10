@@ -3,6 +3,14 @@
 Verified source: https://docs.google.com/spreadsheets/d/1I_hXs_k-a8SAGTtlu72D4ye8ufUKlYyPH3h7fn6-Hjk/edit
 Inspected read-only on 10 October 2026. No source changes or live data import have been performed.
 
+## Company Excel import (11 October 2026)
+
+The primary content workflow is now **Content calendar → select company → Import Excel**. It accepts .xlsx directly, supports multiple worksheets, auto-detects content/date headers and offers a column-matching section for other layouts. Creator, status and priority columns are optional. Review defaults and assignments in the preview before importing. The six basic content fields are Content, Publish date, Publish time, Special note, Content type and Platform.
+
+The company-specific importer derives source keys from the selected company plus content title/date/time/type/platform. It does not rely on sheet row numbers. Identical imported rows are skipped on retry; changes to creator/status/priority do not duplicate or overwrite existing app records. The UI additionally checks existing loaded content. The server enforces the target company, role permissions, validation and a single atomic batch. Maximum: 5 MB, 300 new rows per selected sheet. Excel formulas are not executed; only saved results are read.
+
+The older Migration page remains available to Admin for STAFF WORKS and legacy original-tab CSV snapshots. The row-key rules below apply to that older tool, not the company Excel importer.
+
 ## Original tabs
 
 Company sources observed: ELAINE, FOURCLE, JUNIOR GEORGE, GENTRENEX, SIGNET, TABROBAN, NODE HIVE, GEMNAD SOLUTIONS, LINKEDIN.

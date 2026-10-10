@@ -49,19 +49,21 @@ export async function POST(req:Request){try{
  if(old){const result=await sql.prepare('UPDATE tasks SET title=?,due_date=?,assignee_id=?,status=?,priority=?,notes=?,updated_at=?,updated_by=?,version=version+1 WHERE id=? AND version=?').bind(...values,id,data.version).run();if(!result.meta.changes)throw new HttpError(409,'This task changed. Refresh before saving.');}
  else await sql.prepare('INSERT INTO tasks(title,due_date,assignee_id,status,priority,notes,updated_at,updated_by,id) VALUES(?,?,?,?,?,?,?,?,?)').bind(...values,id).run();
  }
- }else if(action==='import'){
- admin();const rows=body.rows;requireValue(Array.isArray(rows)&&rows.length>0&&rows.length<=300,'Import between 1 and 300 rows at a time.');
+ }else if(action==='import'||action==='calendar_import'){
+ const calendarImport=action==='calendar_import';
+ if(calendarImport){manager();requireValue(body.kind!=='tasks','This import accepts company content only.');const co=await sql.prepare('SELECT id FROM companies WHERE id=? AND active=1').bind(str(data.company_id)).first();requireValue(co,'Select an active company.');}else admin();const rows=body.rows;requireValue(Array.isArray(rows)&&rows.length>0&&rows.length<=300,'Import between 1 and 300 rows at a time.');
  const statements=[];for(const r of rows){
- const key=str(r.source_key,300);requireValue(key,'Every row needs a stable source key.');
+ let key=calendarImport?'':str(r.source_key,300);if(!calendarImport)requireValue(key,'Every row needs a stable source key.');
  const title=str(r.title,500);requireValue(title,'Every row needs a title.');
  const creator=await assignee(r.creator_id);const id=crypto.randomUUID();
  if(body.kind==='tasks')statements.push(sql.prepare('INSERT INTO tasks(id,title,due_date,assignee_id,status,priority,notes,source_key,updated_at,updated_by) VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(source_key) DO NOTHING').bind(id,title,date(r.due_date),creator,choice(r.status,['Pending','In Progress','Completed']),choice(r.priority,priorities),str(r.notes||'',10000),key,now,me.id));
  else{
  const co=await sql.prepare('SELECT id FROM companies WHERE id=? AND active=1').bind(str(r.company_id)).first();requireValue(co,'Company not found.');
+ if(calendarImport){requireValue(r.company_id===data.company_id,'Every row must belong to the selected company.');const identity=JSON.stringify([r.company_id,title,date(r.publish_date),str(r.publish_time||'',30),str(r.type||'Single Post',80),str(r.platform||'Instagram',100)]);const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(identity)))).map(n=>n.toString(16).padStart(2,'0')).join('');key=`calendar:${r.company_id}:${hash}`;}
  statements.push(sql.prepare('INSERT INTO content(id,company_id,title,publish_date,publish_time,type,platform,status,creator_id,priority,notes,source_key,created_at,updated_at,updated_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(source_key) DO NOTHING').bind(id,r.company_id,title,date(r.publish_date),str(r.publish_time||'',30),str(r.type||'Single Post',80),str(r.platform||'Instagram',100),choice(r.status,statuses),creator,choice(r.priority,priorities),str(r.notes||'',10000),key,now,now,me.id));
  }
  }
- const result=await sql.batch(statements);return reply({inserted:result.reduce((n,r)=>n+(r.meta.changes||0),0),skipped:result.filter(r=>!r.meta.changes).length});
+ const result=await sql.batch(statements);return reply({inserted:result.reduce((n,r)=>n+(r.meta.changes?1:0),0),skipped:result.filter(r=>!r.meta.changes).length});
  }else throw new HttpError(400,'Unknown action.');
  return reply({ok:true});
  }catch(e){return fail(e);}}
