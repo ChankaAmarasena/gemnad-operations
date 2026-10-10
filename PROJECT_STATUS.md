@@ -24,7 +24,15 @@ Site project: `appgprj_6aca73b4b28881918355848defae5731`.
 
 ## Deployment checkpoint
 
-Source pushed as `1eb3226e0651c23620c87c933e0a113e65814fab`. Initial deployment failed with incomplete SQL input in the D1 trigger parser. The failed initial migration was repaired to use SELECT RAISE ... WHERE instead of unparenthesized CASE ... END (Cloudflare workers-sdk issue 4727). Local tests pass. Retry publication with the repaired archive; reuse the same Site ID. No live business records exist.
+**Private production deployment succeeded.**
+URL: https://gemnad-operations.gemnadsolutions.chatgpt.site
+Verified deployment: `appgdep_6aca77d7a5b08191acb4c0c106013d84`.
+Saved version: `appgprj_6aca73b4b28881918355848defae5731~appgver_9deb84570e5481919b88ee762f2436a3`.
+Verified application source commit: `027c91eb5c01b97cb68883329704bcc708437226`.
+
+The initial migration failed due to D1 trigger parser compatibility; its failed/unapplied syntax was repaired using SELECT RAISE ... WHERE. The repaired migration and application deployed successfully. Reference: https://github.com/cloudflare/workers-sdk/issues/4727 . Do not edit the now-applied migration.
+
+The deployed site was opened and its private ChatGPT login gate was verified. Owner sign-in/security verification requires the user's interaction; no hosted authenticated dashboard or actual teammate sessions have been tested. This documentation-only checkpoint is being synchronized after the successful application deployment; no application behavior changed.
 
 ## Honest boundaries / follow-up
 
