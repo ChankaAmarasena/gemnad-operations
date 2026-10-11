@@ -75,3 +75,8 @@ Use the Sites build helper for production. Generate SQL before the first build. 
 Use `site-workflow.mjs` from the Sites plugin to commit, push and package the exact source. Credentials go through hidden stdin only. Save/deploy that archive and commit together. The project is private by default; deployment does not change sharing. Keep credentials out of files, logs, Git and the browser bundle.
 
 `PROJECT_STATUS.md` records scope, verification, limitations and resumption steps. The project mirror's `sources/` is read-only and has not been changed.
+
+## Member access
+Admin → Team → Add member / Manage configures role, assigned sections and all or selected companies. Admin has full access. Manager retains editing capability within assigned sections/companies. Designer and Staff can view selected calendars; Designer queue shows only their own assignments meeting active Designer + publish date >= today minus five days. Queue access and calendar-company access are independent. Use the member's ChatGPT email and grant hosted sharing access separately. Password setup was explicitly deferred in favor of existing ChatGPT sign-in.
+
+Google Calendar automatic linking/reminders are not implemented; see PROJECT_STATUS for the integration blocker. A connected plugin in the author's chat is not evidence of hosted per-member consent.

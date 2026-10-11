@@ -1,3 +1,22 @@
+# Current update — 11 October 2026
+
+## Shipped in this update
+- Clear Content Type / Platform selects in simple Add Content, full content form and inline edits, preserving legacy imported values.
+- Live issue diagnosis: production's Test content was assigned to Roshan (Admin), so correctly excluded from the Designer-only queue. Creator choices now show roles and each assigned row explains queue eligibility.
+- Per-member section grants and all/selected company grants, editable by Admin; server-filtered data and write authorization. Designer/Staff calendar access is read-only; Admin/Manager edits remain role-controlled.
+- Queue permissions separate from company calendar grants: a Designer sees their own eligible assignments plus independently granted calendars. Admin/Manager granted the queue can oversee eligible designers. Non-Designer/inactive/old-date content is rejected by design updates even for management.
+- Uploaded Gemnad logo used in sidebar branding.
+- User explicitly chose to retain ChatGPT sign-in. Temporary-password login and forced password change are deferred, not implemented.
+
+## Still blocked / incomplete
+Google Calendar per-member linking and automatic task-day morning notifications are NOT implemented. Google Calendar plugin is installed, but the required Sites plugin-eligibility discovery capability is unavailable in this tool session. Do not infer hosted eligibility from native plugin installation, add guessed connector IDs, or claim calendar consent/sync works. Resume with Sites eligibility support, each visitor's connected account and write consent, event idempotency, update/reassignment handling, and an agreed morning time. No external calendar events were written.
+Site remains owner-private. Adding a Team row does not itself grant hosting access; owner must share with the intended teammate separately.
+
+## Verification
+TypeScript/build and 11 automated tests pass. Tests cover role/date filtering, reassignment, no duplicate content, scoped company writes, hidden sections, and future-company all-access. Local browser: created QA Designer with Design queue + Content calendar + one company; assigned existing content and observed queue count 0 to 1. Production test data was read only, never changed.
+
+---
+
 # Gemnad Operations — project status
 
 Updated: 11 October 2026 (Asia/Colombo).

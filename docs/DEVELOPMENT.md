@@ -11,6 +11,8 @@ The canonical stack is the Sites Vinext starter. Keep its `sites()` integration 
 node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_cooing_tomas.sql
 ```
 
+For existing local databases, apply `drizzle/0001_member_access.sql` once using the same local-only command. New databases need both migrations, in order. Production applies packaged migrations automatically.
+
 5. `npm run dev`, then visit its loopback URL. Local sign-in is intentionally a fake development identity. Never deploy local DB state.
 6. Obtain a Site source credential for the existing project ID; pass it to `site-workflow.mjs` via hidden stdin with ordered check/build commands and an absolute deployment archive path. It owns Git commits and pushes.
 7. Publish the returned pushed commit/archive using the matching private/native Sites operation; retain saved/deployment IDs and poll only nonterminal deployments.

@@ -9,7 +9,14 @@ export function canManage(role:string){return role==='Admin'||role==='Manager';}
 export function eligibleDesign(item:any, member:any, today=todayColombo()){return !!member&&member.active===1&&member.role==='Designer'&&item.publish_date>=cutoffDate(today);}
 export function nextDesignStatus(current:string,next:string){return next===current||designStatuses.indexOf(next as any)===designStatuses.indexOf(current as any)+1;}
 export function safeUrl(value:string){if(!value)return true;try {const u=new URL(value);return u.protocol==='https:';}catch{return false;}}
-export type Member={id:string;user_id:string|null;email:string;name:string;role:typeof roles[number];active:number};
+export const sections = ['Overview','Content calendar','Design queue','Staff queue','Companies','Team','Activity','Migration'] as const;
+export const contentTypes = ['Single Post','Carousel','Reel / Video','Story','Live','Article'] as const;
+export const platforms = ['Instagram','Facebook','TikTok','LinkedIn','YouTube','X','Multi-platform'] as const;
+export function memberSections(m:Member):string[]{if(m.role==='Admin')return [...sections];if(m.sections){try{return JSON.parse(m.sections);}catch{return [];}}return m.role==='Manager'?sections.filter(s=>s!=='Team'&&s!=='Migration'):m.role==='Designer'?['Design queue','Activity']:['Staff queue','Activity'];}
+export function hasSection(m:Member,s:string){return memberSections(m).includes(s);}
+export function companyAccess(m:Member,id:string){if(m.role==='Admin'||m.all_companies===1)return true;if(m.all_companies===undefined)return m.role==='Manager';try{return JSON.parse(m.company_ids||'[]').includes(id);}catch{return false;}}
+export function calendarAccess(m:Member,id:string){return hasSection(m,'Content calendar')&&companyAccess(m,id);}
+export type Member={sections?:string|null;all_companies?:number;company_ids?:string;id:string;user_id:string|null;email:string;name:string;role:typeof roles[number];active:number};
 export type Company={id:string;name:string;color:string;drive_url:string;active:number};
 export type Content={id:string;company_id:string;title:string;publish_date:string;publish_time:string;type:string;platform:string;status:string;design_status:string;creator_id:string|null;priority:string;notes:string;drive_url:string;source_key:string|null;version:number;updated_at:string};
 export type Task={id:string;title:string;due_date:string;assignee_id:string|null;status:string;priority:string;notes:string;version:number};

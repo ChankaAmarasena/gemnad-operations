@@ -3,10 +3,10 @@ mkdirSync('.sites-runtime/permissions',{recursive:true});
 writeFileSync('.sites-runtime/permissions/mock.mjs',`export let identity=null;export let env={};export function setIdentity(v){identity=v;}export function setDB(v){env.DB=v;}export async function getChatGPTUser(){return identity;}`);
 for(const [src,out] of [['lib/domain.ts','domain'],['lib/server.ts','server'],['app/api/workspace/route.ts','route']]){const code=ts.transpileModule(readFileSync(src,'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText.replaceAll("'cloudflare:workers'","'./mock.mjs'").replaceAll("'@/app/chatgpt-auth'","'./mock.mjs'").replaceAll("'./domain'","'./domain.mjs'").replaceAll("'@/lib/domain'","'./domain.mjs'").replaceAll("'@/lib/server'","'./server.mjs'");writeFileSync(`.sites-runtime/permissions/${out}.mjs`,code);}
 const {setIdentity,setDB}=await import('../.sites-runtime/permissions/mock.mjs');const {GET,POST}=await import('../.sites-runtime/permissions/route.mjs');const {todayColombo,cutoffDate}=await import('../.sites-runtime/permissions/domain.mjs');
-const db=new DatabaseSync(':memory:');db.exec('PRAGMA foreign_keys=ON');db.exec(readFileSync('drizzle/0000_cooing_tomas.sql','utf8'));
+const db=new DatabaseSync(':memory:');db.exec('PRAGMA foreign_keys=ON');db.exec(readFileSync('drizzle/0000_cooing_tomas.sql','utf8'));db.exec(readFileSync('drizzle/0001_member_access.sql','utf8'));
 function statement(sql,args=[]){return {bind(...a){return statement(sql,a)},async first(){return db.prepare(sql).get(...args)||null},async all(){return {results:db.prepare(sql).all(...args)}},async run(){return {meta:db.prepare(sql).run(...args)}}};}
 setDB({prepare:statement,async batch(statements){db.exec('BEGIN');try{const out=[];for(const s of statements)out.push(await s.run());db.exec('COMMIT');return out;}catch(e){db.exec('ROLLBACK');throw e;}}});
-for(const [id,role] of [['admin','Admin'],['manager','Manager'],['designer','Designer'],['staff','Staff'],['other','Designer']])db.prepare('INSERT INTO members(id,user_id,email,name,role,active,created_at) VALUES(?,?,?,?,?,1,?)').run(id,id,`${id}@test.test`,id,role,'now');db.exec("INSERT INTO companies(id,name) VALUES('co','Test Company')");
+for(const [id,role] of [['admin','Admin'],['manager','Manager'],['designer','Designer'],['staff','Staff'],['other','Designer']])db.prepare('INSERT INTO members(id,user_id,email,name,role,active,created_at) VALUES(?,?,?,?,?,1,?)').run(id,id,`${id}@test.test`,id,role,'now');db.exec("UPDATE members SET all_companies=1 WHERE role IN ('Admin','Manager');INSERT INTO companies(id,name) VALUES('co','Test Company')");
 for(const [id,creator,date] of [['own','designer',todayColombo()],['old','designer','2020-01-01'],['edge','designer',cutoffDate()],['other-content','other',todayColombo()],['staff-content','staff',todayColombo()]])db.prepare('INSERT INTO content(id,company_id,title,publish_date,creator_id,created_at,updated_at,updated_by) VALUES(?,?,?,?,?,?,?,?)').run(id,'co',id,date,creator,'now','now','admin');
 for(const [id,assignee] of [['task-own','staff'],['task-other','manager']])db.prepare('INSERT INTO tasks(id,title,due_date,assignee_id,updated_at,updated_by) VALUES(?,?,?,?,?,?)').run(id,id,todayColombo(),assignee,'now','admin');
 function as(id){setIdentity(id?{userId:id,email:`${id}@test.test`,displayName:id}:null);}
@@ -23,7 +23,7 @@ test('API authentication, scoping and role enforcement',async()=>{
  assert.equal((await post('design',{id:'own',design_status:'Uploaded to Drive',version:2})).status,200);
  assert.equal(db.prepare("SELECT status FROM content WHERE id='own'").get().status,'Ready');
  assert.equal((await post('design',{id:'edge',design_status:'Created',version:1},'https://attacker.test')).status,403);
- as('staff');w=await (await GET()).json();assert.deepEqual(w.tasks.map(t=>t.id),['task-own']);assert.deepEqual(w.content.map(t=>t.id),['staff-content']);
+ as('staff');w=await (await GET()).json();assert.deepEqual(w.tasks.map(t=>t.id),['task-own']);assert.deepEqual(w.content.map(t=>t.id),[]);
  assert.equal((await post('task',{id:'task-other',status:'Completed',version:1})).status,403);
  assert.equal((await post('task',{id:'task-own',status:'Completed',version:1})).status,200);
  as('manager');assert.equal((await post('member',{name:'Bad',email:'bad@test.test',role:'Admin'})).status,403);
@@ -47,4 +47,31 @@ test('company Excel imports are scoped, permission checked, atomic and idempoten
  const made=db.prepare("SELECT * FROM content WHERE title='Excel content' AND company_id='co'").get();assert.equal(made.design_status,'Pending');
  assert.equal((await post('content',{...made,priority:'Urgent'})).status,200);assert.equal(db.prepare('SELECT priority FROM content WHERE id=?').get(made.id).priority,'Urgent');
  assert.equal(db.prepare('SELECT notes FROM content WHERE id=?').get(made.id).notes,'All visible');
+});
+
+test('section and company grants control server reads, writes and personal queues',async()=>{
+ as('admin');
+ let res=await post('member',{id:'designer',name:'designer',email:'designer@test.test',role:'Designer',active:1,sections:['Design queue','Content calendar'],all_companies:0,company_ids:['co-two']});assert.equal(res.status,200);
+ as('designer');let w=await (await GET()).json();assert.deepEqual(w.me.sections,'["Design queue","Content calendar"]');
+ assert.ok(w.content.some(c=>c.company_id==='co-two'));assert.ok(w.content.some(c=>c.id==='own'));assert.ok(!w.content.some(c=>c.id==='other-content'));assert.ok(!w.content.some(c=>c.id==='old'));
+ assert.equal((await post('content',{...w.content[0],title:'Unauthorized edit'})).status,403);
+ as('admin');assert.equal((await post('member',{id:'designer',name:'designer',email:'designer@test.test',role:'Designer',active:1,sections:['Content calendar'],all_companies:0,company_ids:['co-two']})).status,200);
+ as('designer');w=await (await GET()).json();assert.ok(w.content.every(c=>c.company_id==='co-two'));assert.equal((await post('design',{id:'edge',design_status:'Created',version:1})).status,403);
+ as('admin');assert.equal((await post('member',{id:'manager',name:'manager',email:'manager@test.test',role:'Manager',active:1,sections:['Content calendar'],all_companies:0,company_ids:['co-two']})).status,200);
+ as('manager');w=await (await GET()).json();assert.ok(w.content.every(c=>c.company_id==='co-two'));assert.equal(w.tasks.length,0);assert.equal(w.activity.length,0);
+ const forbidden=db.prepare("SELECT * FROM content WHERE id='staff-content'").get();assert.equal((await post('content',{...forbidden,title:'Blocked'})).status,403);
+ const permitted=w.content[0];assert.equal((await post('content',{...permitted,title:'Allowed manager edit'})).status,200);
+ assert.equal((await post('company',{id:'co-two',name:'No section'})).status,403);
+ as('admin');assert.equal((await post('design',{id:'staff-content',design_status:'Created',version:1})).status,403);
+ assert.equal((await post('member',{id:'manager',name:'manager',email:'manager@test.test',role:'Manager',sections:['Team'],all_companies:1,company_ids:[]})).status,400);
+ assert.equal((await post('member',{id:'manager',name:'manager',email:'manager@test.test',role:'Manager',sections:['Content calendar'],all_companies:1,company_ids:[]})).status,200);
+ db.exec("INSERT INTO companies(id,name) VALUES('future','Future Company')");as('manager');w=await (await GET()).json();assert.ok(w.companies.some(c=>c.id==='future'));
+});
+test('creator reassignment enters and leaves the design queue without duplicate content',async()=>{
+ as('admin');await post('member',{id:'designer',name:'designer',email:'designer@test.test',role:'Designer',active:1,sections:['Design queue'],all_companies:0,company_ids:[]});
+ const before=db.prepare('SELECT count(*) n FROM content').get().n;
+ let item=db.prepare("SELECT * FROM content WHERE id='staff-content'").get();assert.equal((await post('content',{...item,creator_id:'designer'})).status,200);
+ as('designer');let w=await (await GET()).json();assert.ok(w.content.some(c=>c.id===item.id));
+ as('admin');item=db.prepare("SELECT * FROM content WHERE id='staff-content'").get();assert.equal((await post('content',{...item,creator_id:'admin'})).status,200);
+ as('designer');w=await (await GET()).json();assert.ok(!w.content.some(c=>c.id===item.id));assert.equal(db.prepare('SELECT count(*) n FROM content').get().n,before);
 });

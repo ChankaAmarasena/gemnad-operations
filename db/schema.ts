@@ -1,5 +1,6 @@
 import { sqliteTable, text, integer, uniqueIndex, index } from 'drizzle-orm/sqlite-core';
 export const members = sqliteTable('members', {
+ sections:text('sections'),allCompanies:integer('all_companies').notNull().default(0),companyIds:text('company_ids').notNull().default('[]'),
  id:text('id').primaryKey(), userId:text('user_id'), email:text('email').notNull(), name:text('name').notNull(),
  role:text('role',{enum:['Admin','Manager','Designer','Staff']}).notNull(), active:integer('active').notNull().default(1), createdAt:text('created_at').notNull()
 },t=>[uniqueIndex('member_email').on(t.email),uniqueIndex('member_user').on(t.userId)]);
