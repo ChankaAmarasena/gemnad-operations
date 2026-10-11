@@ -7,7 +7,7 @@ import { wrapDatabase, type Database } from './sqlite-d1';
 // `npm run migrate` (scripts/migrate.mjs), never at request time.
 const cache = globalThis as unknown as { gemnadDatabase?: Database };
 
-export function databasePath() { return resolve(process.env.DATABASE_PATH || 'data/gemnad.db'); }
+export function databasePath() { return resolve(/*turbopackIgnore: true*/ process.env.DATABASE_PATH || 'data/gemnad.db'); }
 
 export function database(): Database {
  if (!cache.gemnadDatabase) {

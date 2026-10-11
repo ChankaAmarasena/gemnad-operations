@@ -74,3 +74,21 @@ test('creator reassignment enters and leaves the design queue without duplicate 
  as('admin');item=db.prepare("SELECT * FROM content WHERE id='staff-content'").get();assert.equal((await post('content',{...item,creator_id:'admin'})).status,200);
  as('designer');w=await (await GET()).json();assert.ok(!w.content.some(c=>c.id===item.id));assert.equal(db.prepare('SELECT count(*) n FROM content').get().n,before);
 });
+test('only ADMIN_EMAIL can bootstrap an Admin, and only once',async()=>{
+ process.env.ADMIN_EMAIL=' Owner@Example.com ';
+ try{
+  setIdentity({userId:'stranger',email:'stranger@example.com',displayName:'Stranger'});assert.equal((await GET()).status,403);
+  setIdentity({userId:'owner-1',email:'OWNER@example.com',displayName:'Owner'});let w=await (await GET()).json();assert.equal(w.me.role,'Admin');assert.equal(w.me.email,'owner@example.com');
+  assert.equal(db.prepare("SELECT count(*) n FROM members WHERE email='owner@example.com'").get().n,1);
+  db.prepare("UPDATE members SET active=0 WHERE email='owner@example.com'").run();
+  setIdentity({userId:'owner-2',email:'owner@example.com',displayName:'Owner'});assert.equal((await GET()).status,403);
+  assert.equal(db.prepare("SELECT count(*) n FROM members WHERE email='owner@example.com'").get().n,1);
+ }finally{delete process.env.ADMIN_EMAIL;}
+});
+test('APP_URL fixes the allowed request origin behind a reverse proxy',async()=>{
+ as('admin');process.env.APP_URL='https://ops.example.com';
+ try{
+  assert.equal((await post('company',{name:'Proxy Co'},'http://localhost')).status,403);
+  assert.equal((await post('company',{name:'Proxy Co'},'https://ops.example.com')).status,200);
+ }finally{delete process.env.APP_URL;}
+});
