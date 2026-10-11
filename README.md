@@ -80,3 +80,11 @@ Use `site-workflow.mjs` from the Sites plugin to commit, push and package the ex
 Admin → Team → Add member / Manage configures role, assigned sections and all or selected companies. Admin has full access. Manager retains editing capability within assigned sections/companies. Designer and Staff can view selected calendars; Designer queue shows only their own assignments meeting active Designer + publish date >= today minus five days. Queue access and calendar-company access are independent. Use the member's ChatGPT email and grant hosted sharing access separately. Password setup was explicitly deferred in favor of existing ChatGPT sign-in.
 
 Google Calendar automatic linking/reminders are not implemented; see PROJECT_STATUS for the integration blocker. A connected plugin in the author's chat is not evidence of hosted per-member consent.
+
+## GitHub repository
+
+Private source repository: https://github.com/gemnadsolutions/gemnad-operations
+
+The `main` branch preserves the original Sites commit history. The local `github` remote points to this repository. After committing future changes, push with `git push github main` using an authenticated GitHub account with repository access.
+
+GitHub stores source, migrations, tests and project documentation. Production database records, local test databases, credentials, dependencies and build outputs are excluded. The live app remains hosted by Sites; a GitHub push alone does not deploy it. Continue publication using the Sites workflow in `docs/DEVELOPMENT.md`.

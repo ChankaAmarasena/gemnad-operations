@@ -81,3 +81,7 @@ The deployed site was opened and its private ChatGPT login gate was verified. Ow
 1. Read this file and `.openai/hosting.json`.
 2. Inspect current repository, deployment and source credential state; preserve the existing Site identity and applied migrations.
 3. Continue the first unfinished milestone rather than rebuilding the project.
+
+## GitHub persistence — 11 October 2026
+
+Created private repository `gemnadsolutions/gemnad-operations` and configured the local `github` remote. The initial GitHub push preserves all five existing source commits plus the repository documentation commit. GitHub is a source backup and collaboration repository; production D1 data remains on Sites and is not included in Git. GitHub pushes do not automatically deploy the live site.
