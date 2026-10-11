@@ -10,7 +10,7 @@ function choice(v:any,list:readonly string[]){requireValue(list.includes(v),'Inv
 function date(v:any){requireValue(typeof v==='string'&&validDate(v),'Enter a valid date.');return v;}
 function url(v:any){const s=str(v||'',2000);requireValue(safeUrl(s),'Links must use https://');return s;}
 export async function POST(req:Request){try{
- const origin=req.headers.get('origin');if(!origin||origin!==new URL(req.url).origin)throw new HttpError(403,'Request origin is not allowed.');
+ const origin=req.headers.get('origin'),expected=process.env.APP_URL?new URL(process.env.APP_URL).origin:new URL(req.url).origin;if(!origin||origin!==expected)throw new HttpError(403,'Request origin is not allowed.');
  if(Number(req.headers.get('content-length')||0)>1000000)throw new HttpError(413,'Request is too large.');
  const me=await currentMember(),sql=db(),manage=canManage(me.role),body:any=await req.json(),action=body.action,data=body.data||{},now=new Date().toISOString();
  const admin=()=>{if(me.role!=='Admin')throw new HttpError(403,'Only an administrator can manage team access.');};

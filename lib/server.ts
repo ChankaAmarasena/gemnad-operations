@@ -1,17 +1,17 @@
-import { env } from 'cloudflare:workers';
-import { getChatGPTUser } from '@/app/chatgpt-auth';
+import { getCurrentUser } from './auth';
+import { database } from './database';
 import { canManage,cutoffDate,todayColombo,hasSection,companyAccess,calendarAccess,type Member } from './domain';
-export function db(){if(!env.DB)throw new Error('Database is not configured');return env.DB;}
+export function db(){return database();}
 export class HttpError extends Error {constructor(public status:number,message:string){super(message);}}
 export async function currentMember(){
- const identity=await getChatGPTUser();if(!identity)throw new HttpError(401,'Please sign in to continue.');
- const sql=db(),email=identity.email.toLowerCase();
+ const identity=await getCurrentUser();if(!identity)throw new HttpError(401,'Please sign in to continue.');
+ const sql=db(),email=identity.email.toLowerCase(),adminEmail=(process.env.ADMIN_EMAIL||'').trim().toLowerCase();
  let me=await sql.prepare('SELECT * FROM members WHERE user_id=?').bind(identity.userId).first<Member>();
  if(!me){
- // Initial publication is owner-private. The only permitted first visitor is the owner.
- // This atomic claim is closed permanently once any member exists.
- await sql.prepare("INSERT INTO members (id,user_id,email,name,role,active,created_at) SELECT ?,?,?,?,'Admin',1,? WHERE NOT EXISTS (SELECT 1 FROM members)").bind(crypto.randomUUID(),identity.userId,email,identity.displayName,new Date().toISOString()).run();
  await sql.prepare('UPDATE members SET user_id=? WHERE email=? AND user_id IS NULL AND active=1').bind(identity.userId,email).run();
+ // The server is publicly reachable, so only the configured ADMIN_EMAIL may bootstrap
+ // an Admin, and only while no member row exists for that email (a deactivated Admin stays out).
+ if(adminEmail&&email===adminEmail)await sql.prepare("INSERT INTO members (id,user_id,email,name,role,active,created_at,all_companies) SELECT ?,?,?,?,'Admin',1,?,1 WHERE NOT EXISTS (SELECT 1 FROM members WHERE email=?)").bind(crypto.randomUUID(),identity.userId,email,identity.displayName,new Date().toISOString(),email).run();
  me=await sql.prepare('SELECT * FROM members WHERE user_id=?').bind(identity.userId).first<Member>();
  }
  if(!me||!me.active)throw new HttpError(403,'Your account does not have active Gemnad access. Contact your administrator.');return me;
